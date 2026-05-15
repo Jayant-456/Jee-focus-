@@ -1,0 +1,480 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>JEE Focus — PCM Mission</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f1f0ea; }
+    #app { position: relative; min-height: 100vh; }
+    .screen { display: none; flex-direction: column; min-height: 100vh; }
+    .screen.active { display: flex; }
+
+    /* LOCK SCREEN */
+    #lock-screen { background: #0a0a0a; align-items: center; justify-content: center; padding: 2rem; text-align: center; }
+    .lock-icon { font-size: 52px; color: #e24b4a; margin-bottom: 1rem; }
+    .lock-title { font-size: 24px; font-weight: 600; color: #fff; margin-bottom: 0.5rem; letter-spacing: 2px; }
+    .lock-sub { font-size: 14px; color: #888; margin-bottom: 2rem; line-height: 1.7; }
+    .lock-quote { font-size: 13px; color: #ba7517; font-style: italic; border-left: 3px solid #ba7517; padding-left: 12px; text-align: left; margin-bottom: 2rem; line-height: 1.6; }
+    .unlock-btn { width: 100%; padding: 16px; background: #e24b4a; color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; letter-spacing: 0.5px; }
+    .unlock-btn:active { opacity: 0.85; }
+    .streak-row { display: flex; gap: 12px; margin-bottom: 2rem; width: 100%; }
+    .streak-card { flex: 1; background: #1a1a1a; border-radius: 12px; padding: 14px 8px; text-align: center; }
+    .streak-num { font-size: 26px; font-weight: 600; color: #ef9f27; }
+    .streak-label { font-size: 11px; color: #666; margin-top: 4px; }
+
+    /* MAIN APP */
+    #main-screen { background: #f1f0ea; }
+    .top-bar { background: #0a0a0a; padding: 16px 16px 12px; color: #fff; }
+    .top-bar-row { display: flex; justify-content: space-between; align-items: center; }
+    .app-title { font-size: 18px; font-weight: 600; color: #fff; }
+    .app-subtitle { font-size: 11px; color: #555; margin-top: 3px; }
+    .top-actions { display: flex; gap: 8px; align-items: center; }
+    .timer-badge { background: #1a1a1a; border-radius: 8px; padding: 7px 12px; font-size: 13px; color: #ef9f27; font-weight: 500; cursor: pointer; border: none; }
+    .timer-badge.lock { color: #555; }
+    .focus-bar { display: flex; gap: 8px; margin-top: 12px; }
+    .subject-chip { flex: 1; text-align: center; padding: 8px 4px; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s; border: none; }
+    .subject-chip.all { background: #2a2a2a; color: #888; }
+    .subject-chip.p  { background: #1a1a6a; color: #85b7eb; }
+    .subject-chip.c  { background: #1a4a1a; color: #97c459; }
+    .subject-chip.m  { background: #4a1a1a; color: #f09595; }
+    .subject-chip.all.active { background: #444; color: #fff; }
+    .subject-chip.p.active   { background: #185fa5; color: #fff; }
+    .subject-chip.c.active   { background: #3b6d11; color: #fff; }
+    .subject-chip.m.active   { background: #a32d2d; color: #fff; }
+
+    .progress-section { padding: 12px 16px; background: #fff; border-bottom: 0.5px solid rgba(0,0,0,0.08); }
+    .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: #888; margin-bottom: 6px; }
+    .progress-track { height: 6px; background: #eee; border-radius: 10px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #185fa5, #3b6d11, #a32d2d); border-radius: 10px; transition: width 0.4s ease; }
+
+    .task-list { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+    .section-header { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; padding: 4px 0; font-weight: 600; }
+    .task-card { background: #fff; border-radius: 12px; border: 0.5px solid rgba(0,0,0,0.08); padding: 12px 14px; display: flex; align-items: flex-start; gap: 12px; transition: opacity 0.2s; }
+    .task-card.done { opacity: 0.45; }
+    .task-card.done .task-title { text-decoration: line-through; color: #aaa; }
+    .task-check { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; margin-top: 1px; transition: all 0.15s; }
+    .task-check.checked { background: #3b6d11; border-color: #3b6d11; color: #fff; font-size: 13px; }
+    .task-info { flex: 1; cursor: pointer; }
+    .task-title { font-size: 14px; color: #111; line-height: 1.5; }
+    .task-meta { display: flex; gap: 6px; margin-top: 6px; align-items: center; flex-wrap: wrap; }
+    .tag { font-size: 11px; padding: 2px 9px; border-radius: 20px; font-weight: 600; }
+    .tag.P { background: #e6f1fb; color: #185fa5; }
+    .tag.C { background: #eaf3de; color: #3b6d11; }
+    .tag.M { background: #fcebeb; color: #a32d2d; }
+    .tag.hard { background: #faece7; color: #993c1d; }
+    .tag.med  { background: #faeeda; color: #854f0b; }
+    .tag.easy { background: #eaf3de; color: #3b6d11; }
+    .priority-dot { width: 5px; height: 5px; border-radius: 50%; display: inline-block; margin-right: 2px; }
+    .task-delete { font-size: 18px; color: #ccc; cursor: pointer; padding: 4px; flex-shrink: 0; background: none; border: none; }
+    .task-delete:active { color: #e24b4a; }
+
+    .add-section { padding: 12px 16px 24px; background: #fff; border-top: 0.5px solid rgba(0,0,0,0.08); }
+    .add-row { display: flex; gap: 8px; margin-bottom: 10px; }
+    .add-input { flex: 1; padding: 11px 14px; border: 0.5px solid #ddd; border-radius: 10px; font-size: 14px; background: #f8f8f8; color: #111; outline: none; }
+    .add-input:focus { border-color: #888; background: #fff; }
+    .add-btn { padding: 11px 16px; background: #0a0a0a; color: #fff; border: none; border-radius: 10px; font-size: 18px; cursor: pointer; }
+    .add-btn:active { opacity: 0.8; }
+    .add-options { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .opt-label { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    .opt-btn { padding: 6px 13px; border-radius: 20px; border: 0.5px solid #ddd; font-size: 12px; cursor: pointer; background: #f5f5f5; color: #888; transition: all 0.12s; font-weight: 500; }
+    .opt-btn.P.selected { background: #185fa5; color: #fff; border-color: transparent; }
+    .opt-btn.C.selected { background: #3b6d11; color: #fff; border-color: transparent; }
+    .opt-btn.M.selected { background: #a32d2d; color: #fff; border-color: transparent; }
+    .opt-btn.hard.selected { background: #993c1d; color: #fff; border-color: transparent; }
+    .opt-btn.med.selected  { background: #854f0b; color: #fff; border-color: transparent; }
+    .opt-btn.easy.selected { background: #3b6d11; color: #fff; border-color: transparent; }
+    .divider { width: 1px; height: 20px; background: #ddd; flex-shrink: 0; }
+
+    /* POMODORO OVERLAY */
+    #pomo-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 999; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; text-align: center; }
+    #pomo-overlay.open { display: flex; }
+    .pomo-close { position: absolute; top: 24px; right: 24px; color: #555; font-size: 24px; cursor: pointer; background: none; border: none; }
+    .pomo-ring { width: 180px; height: 180px; border-radius: 50%; border: 6px solid #1a1a1a; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 1.5rem; transition: border-color 0.3s; }
+    .pomo-time { font-size: 40px; font-weight: 600; color: #fff; letter-spacing: 2px; }
+    .pomo-ring-label { font-size: 11px; color: #555; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+    .pomo-phase-label { font-size: 14px; color: #aaa; margin-bottom: 8px; }
+    .pomo-task-label { font-size: 12px; color: #ba7517; margin-bottom: 1.5rem; max-width: 260px; line-height: 1.6; }
+    .pomo-btns { display: flex; gap: 12px; }
+    .pomo-btn { padding: 13px 24px; border-radius: 10px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; }
+    .pomo-btn.start { background: #e24b4a; color: #fff; }
+    .pomo-btn.reset { background: #222; color: #666; }
+
+    .empty-state { text-align: center; padding: 3rem 1rem; color: #bbb; }
+    .empty-state i { font-size: 44px; display: block; margin-bottom: 1rem; }
+    .empty-state p { font-size: 14px; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- LOCK SCREEN -->
+  <div id="lock-screen" class="screen active">
+    <div class="lock-icon"><i class="ti ti-shield-lock"></i></div>
+    <div class="lock-title">JEE FOCUS MODE</div>
+    <div class="lock-sub">Every second wasted is a rank lost.<br>Your competitors are studying right now.</div>
+    <div class="lock-quote">"The pain of discipline is far less than the pain of regret. PCM won't master itself."</div>
+    <div class="streak-row">
+      <div class="streak-card"><div class="streak-num" id="streak-num">0</div><div class="streak-label">Day Streak</div></div>
+      <div class="streak-card"><div class="streak-num" id="done-today-num">0</div><div class="streak-label">Done Today</div></div>
+      <div class="streak-card"><div class="streak-num" id="pending-num">0</div><div class="streak-label">Pending</div></div>
+    </div>
+    <button class="unlock-btn" onclick="enterApp()"><i class="ti ti-lock-open"></i> Enter Study Mode</button>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="main-screen" class="screen">
+    <div class="top-bar">
+      <div class="top-bar-row">
+        <div>
+          <div class="app-title"><i class="ti ti-atom" style="font-size:16px; margin-right:6px;"></i>PCM MISSION</div>
+          <div class="app-subtitle" id="date-label"></div>
+        </div>
+        <div class="top-actions">
+          <button class="timer-badge" onclick="openPomo()"><i class="ti ti-clock"></i> Pomodoro</button>
+          <button class="timer-badge lock" onclick="goLock()"><i class="ti ti-lock"></i></button>
+        </div>
+      </div>
+      <div class="focus-bar">
+        <button class="subject-chip all active" onclick="filterTasks('all', this)">All</button>
+        <button class="subject-chip p" onclick="filterTasks('P', this)"><i class="ti ti-bolt"></i> Physics</button>
+        <button class="subject-chip c" onclick="filterTasks('C', this)"><i class="ti ti-flask"></i> Chem</button>
+        <button class="subject-chip m" onclick="filterTasks('M', this)"><i class="ti ti-math"></i> Maths</button>
+      </div>
+    </div>
+
+    <div class="progress-section">
+      <div class="progress-label">
+        <span>Today's progress</span>
+        <span id="progress-text">0 / 0 tasks</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    </div>
+
+    <div class="task-list" id="task-list">
+      <div class="empty-state"><i class="ti ti-books"></i><p>Add your first PCM task below</p></div>
+    </div>
+
+    <div class="add-section">
+      <div class="add-row">
+        <input class="add-input" id="task-input" placeholder="e.g. Revise Newton's Laws Ch.4..." maxlength="120" />
+        <button class="add-btn" onclick="addTask()"><i class="ti ti-plus"></i></button>
+      </div>
+      <div class="add-options">
+        <span class="opt-label">Subject:</span>
+        <button class="opt-btn P selected" id="sel-P" onclick="selectSubject('P')">Physics</button>
+        <button class="opt-btn C" id="sel-C" onclick="selectSubject('C')">Chem</button>
+        <button class="opt-btn M" id="sel-M" onclick="selectSubject('M')">Maths</button>
+        <div class="divider"></div>
+        <button class="opt-btn hard" id="sel-hard" onclick="selectDiff('hard')">Hard</button>
+        <button class="opt-btn med selected" id="sel-med" onclick="selectDiff('med')">Medium</button>
+        <button class="opt-btn easy" id="sel-easy" onclick="selectDiff('easy')">Easy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- POMODORO OVERLAY -->
+  <div id="pomo-overlay">
+    <button class="pomo-close" onclick="closePomo()"><i class="ti ti-x"></i></button>
+    <div class="pomo-ring" id="pomo-ring">
+      <span class="pomo-time" id="pomo-display">25:00</span>
+      <span class="pomo-ring-label" id="pomo-ring-label">Focus</span>
+    </div>
+    <div class="pomo-phase-label" id="pomo-phase-label">🔥 Focus Session — 25 minutes</div>
+    <div class="pomo-task-label" id="pomo-task-label">Tap any pending task to link it here.</div>
+    <div class="pomo-btns">
+      <button class="pomo-btn start" id="pomo-start-btn" onclick="togglePomo()">Start</button>
+      <button class="pomo-btn reset" onclick="resetPomo()">Reset</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let tasks = [];
+  let filter = 'all';
+  let selSubject = 'P';
+  let selDiff = 'med';
+  let pomoRunning = false;
+  let pomoInterval = null;
+  let pomoSeconds = 25 * 60;
+  let pomoPhase = 'focus';
+  let pomoFocusTask = null;
+  const FOCUS_SECS = 25 * 60;
+  const BREAK_SECS = 5 * 60;
+
+  function save() {
+    try { localStorage.setItem('jee_tasks', JSON.stringify(tasks)); } catch(e) {}
+  }
+
+  function load() {
+    try {
+      const d = localStorage.getItem('jee_tasks');
+      if (d) tasks = JSON.parse(d);
+    } catch(e) {}
+  }
+
+  function enterApp() {
+    document.getElementById('lock-screen').classList.remove('active');
+    document.getElementById('main-screen').classList.add('active');
+    renderTasks();
+    updateProgress();
+  }
+
+  function goLock() {
+    document.getElementById('main-screen').classList.remove('active');
+    document.getElementById('lock-screen').classList.add('active');
+    updateLockStats();
+  }
+
+  function updateLockStats() {
+    const today = new Date().toDateString();
+    const done = tasks.filter(t => t.done && t.doneDate === today).length;
+    const pending = tasks.filter(t => !t.done).length;
+    document.getElementById('done-today-num').textContent = done;
+    document.getElementById('pending-num').textContent = pending;
+    try {
+      const streak = parseInt(localStorage.getItem('jee_streak') || '0');
+      document.getElementById('streak-num').textContent = streak;
+    } catch(e) {}
+  }
+
+  function selectSubject(s) {
+    selSubject = s;
+    ['P','C','M'].forEach(x => {
+      const el = document.getElementById('sel-'+x);
+      el.className = 'opt-btn ' + x + (x === s ? ' selected' : '');
+    });
+  }
+
+  function selectDiff(d) {
+    selDiff = d;
+    ['hard','med','easy'].forEach(x => {
+      const el = document.getElementById('sel-'+x);
+      el.className = 'opt-btn ' + x + (x === d ? ' selected' : '');
+    });
+  }
+
+  function addTask() {
+    const input = document.getElementById('task-input');
+    const text = input.value.trim();
+    if (!text) return;
+    const task = {
+      id: Date.now(),
+      text,
+      subject: selSubject,
+      diff: selDiff,
+      done: false,
+      doneDate: null,
+      priority: selDiff === 'hard' ? 3 : selDiff === 'med' ? 2 : 1
+    };
+    tasks.unshift(task);
+    save();
+    input.value = '';
+    renderTasks();
+    updateProgress();
+  }
+
+  function toggleDone(id) {
+    const t = tasks.find(t => t.id === id);
+    if (!t) return;
+    t.done = !t.done;
+    t.doneDate = t.done ? new Date().toDateString() : null;
+    if (t.done) updateStreak();
+    save();
+    renderTasks();
+    updateProgress();
+  }
+
+  function deleteTask(id) {
+    if (!confirm('Delete this task?')) return;
+    tasks = tasks.filter(t => t.id !== id);
+    save();
+    renderTasks();
+    updateProgress();
+  }
+
+  function updateStreak() {
+    try {
+      const today = new Date().toDateString();
+      const lastDay = localStorage.getItem('jee_last_day');
+      let streak = parseInt(localStorage.getItem('jee_streak') || '0');
+      if (lastDay !== today) {
+        streak += 1;
+        localStorage.setItem('jee_streak', streak);
+        localStorage.setItem('jee_last_day', today);
+      }
+    } catch(e) {}
+  }
+
+  function filterTasks(f, el) {
+    filter = f;
+    document.querySelectorAll('.subject-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    renderTasks();
+  }
+
+  function renderTasks() {
+    const list = document.getElementById('task-list');
+    const visible = filter === 'all' ? tasks : tasks.filter(t => t.subject === filter);
+    const pending = visible.filter(t => !t.done).sort((a,b) => b.priority - a.priority);
+    const done    = visible.filter(t => t.done);
+
+    if (visible.length === 0) {
+      list.innerHTML = '<div class="empty-state"><i class="ti ti-books"></i><p>No tasks here. Add your study goals below.</p></div>';
+      return;
+    }
+
+    let html = '';
+    if (pending.length > 0) {
+      html += '<div class="section-header">To Do</div>';
+      pending.forEach(t => { html += taskHTML(t); });
+    }
+    if (done.length > 0) {
+      html += '<div class="section-header" style="margin-top:8px;">Completed</div>';
+      done.forEach(t => { html += taskHTML(t); });
+    }
+    list.innerHTML = html;
+  }
+
+  function taskHTML(t) {
+    const subjectNames = { P: 'Physics', C: 'Chem', M: 'Maths' };
+    const dotColor = t.priority === 3 ? '#e24b4a' : t.priority === 2 ? '#ef9f27' : '#97c459';
+    const dots = Array(t.priority).fill(`<span class="priority-dot" style="background:${dotColor}"></span>`).join('');
+    const checkInner = t.done ? '✓' : '';
+    return `
+      <div class="task-card ${t.done ? 'done' : ''}">
+        <div class="task-check ${t.done ? 'checked' : ''}" onclick="toggleDone(${t.id})">${checkInner}</div>
+        <div class="task-info" onclick="startPomoForTask(${t.id})">
+          <div class="task-title">${escHtml(t.text)}</div>
+          <div class="task-meta">
+            <span class="tag ${t.subject}">${subjectNames[t.subject]}</span>
+            <span class="tag ${t.diff}">${t.diff.charAt(0).toUpperCase() + t.diff.slice(1)}</span>
+            <span>${dots}</span>
+          </div>
+        </div>
+        <button class="task-delete" onclick="deleteTask(${t.id})"><i class="ti ti-trash"></i></button>
+      </div>`;
+  }
+
+  function escHtml(t) {
+    return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function updateProgress() {
+    const total = tasks.length;
+    const done  = tasks.filter(t => t.done).length;
+    const pct   = total ? Math.round((done / total) * 100) : 0;
+    document.getElementById('progress-text').textContent = `${done} / ${total} tasks`;
+    document.getElementById('progress-fill').style.width = pct + '%';
+  }
+
+  function startPomoForTask(id) {
+    const t = tasks.find(t => t.id === id);
+    if (!t || t.done) return;
+    pomoFocusTask = t;
+    openPomo();
+  }
+
+  function openPomo() {
+    document.getElementById('pomo-overlay').classList.add('open');
+    const label = pomoFocusTask
+      ? `Focusing on: "${pomoFocusTask.text.slice(0, 55)}${pomoFocusTask.text.length > 55 ? '…' : ''}"`
+      : 'Tap any pending task to link it here.';
+    document.getElementById('pomo-task-label').textContent = label;
+    renderPomoTime();
+  }
+
+  function closePomo() {
+    document.getElementById('pomo-overlay').classList.remove('open');
+  }
+
+  function renderPomoTime() {
+    const m = Math.floor(pomoSeconds / 60);
+    const s = pomoSeconds % 60;
+    document.getElementById('pomo-display').textContent =
+      `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    const isFocus = pomoPhase === 'focus';
+    document.getElementById('pomo-phase-label').textContent =
+      isFocus ? '🔥 Focus Session — 25 minutes' : '✅ Break Time — 5 minutes';
+    document.getElementById('pomo-ring-label').textContent = isFocus ? 'Focus' : 'Break';
+    document.getElementById('pomo-ring').style.borderColor = isFocus ? '#e24b4a' : '#3b6d11';
+  }
+
+  function togglePomo() {
+    if (pomoRunning) {
+      clearInterval(pomoInterval);
+      pomoRunning = false;
+      document.getElementById('pomo-start-btn').textContent = 'Resume';
+    } else {
+      pomoRunning = true;
+      document.getElementById('pomo-start-btn').textContent = 'Pause';
+      pomoInterval = setInterval(() => {
+        pomoSeconds--;
+        if (pomoSeconds <= 0) {
+          clearInterval(pomoInterval);
+          pomoRunning = false;
+          if (pomoPhase === 'focus') {
+            alert('🔥 Focus session complete! Take a 5-minute break.');
+            if (pomoFocusTask) toggleDone(pomoFocusTask.id);
+            pomoPhase = 'break';
+            pomoSeconds = BREAK_SECS;
+            document.getElementById('pomo-start-btn').textContent = 'Start Break';
+          } else {
+            alert('✅ Break over. Back to work!');
+            pomoPhase = 'focus';
+            pomoSeconds = FOCUS_SECS;
+            pomoFocusTask = null;
+            document.getElementById('pomo-task-label').textContent = 'Tap any pending task to link it here.';
+            document.getElementById('pomo-start-btn').textContent = 'Start';
+          }
+        }
+        renderPomoTime();
+      }, 1000);
+    }
+  }
+
+  function resetPomo() {
+    clearInterval(pomoInterval);
+    pomoRunning = false;
+    pomoPhase = 'focus';
+    pomoSeconds = FOCUS_SECS;
+    pomoFocusTask = null;
+    document.getElementById('pomo-start-btn').textContent = 'Start';
+    document.getElementById('pomo-task-label').textContent = 'Tap any pending task to link it here.';
+    renderPomoTime();
+  }
+
+  function init() {
+    load();
+    const now = new Date();
+    document.getElementById('date-label').textContent =
+      now.toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long' });
+    updateProgress();
+    updateLockStats();
+    renderPomoTime();
+
+    if (tasks.length === 0) {
+      tasks = [
+        { id: 1, text: 'Revise Kinematics — NCERT Ch.3 + 20 PYQs', subject: 'P', diff: 'med',  done: false, doneDate: null, priority: 2 },
+        { id: 2, text: 'Organic Reaction Mechanisms — 25 problems', subject: 'C', diff: 'hard', done: false, doneDate: null, priority: 3 },
+        { id: 3, text: 'Limits & Continuity — JD Lee Exercise 5',   subject: 'M', diff: 'hard', done: false, doneDate: null, priority: 3 },
+        { id: 4, text: 'Electrostatics formula sheet — self-test',   subject: 'P', diff: 'easy', done: false, doneDate: null, priority: 1 },
+      ];
+      save();
+    }
+  }
+
+  document.getElementById('task-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addTask();
+  });
+
+  init();
+</script>
+</body>
+</html>
+
+
